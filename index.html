@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        function App() {
+            const [transactions, setTransactions] = React.useState([]);
+            const [description, setDescription] = React.useState('');
+            const [amount, setAmount] = React.useState('');
+            const [type, setType] = React.useState('expense');
+            const [editingId, setEditingId] = React.useState(null);  // Add state to track editing transaction
+
+            React.useEffect(() => {
+                const storedTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+                setTransactions(storedTransactions);
+            }, []);
+
+            function handleAddOrUpdateTransaction() {
+                if (!description || amount === '') return;  // Ensure no empty fields
+                const newTransaction = {
+                    id: editingId || new Date().getTime(),
+                    description,
+                    amount: parseFloat(amount),
+                    type
+                };
+                const updatedTransactions = transactions.filter(tr => tr.id !== newTransaction.id); // Filter out the current transaction if editing
+                updatedTransactions.push(newTransaction);
+                localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+                setTransactions(updatedTransactions);
+                setDescription('');
+                setAmount('');
+                setType('expense');
+                setEditingId(null);  // Reset editing ID after update
+            }
+
+            function handleEditTransaction(transaction) {
+                setDescription(transaction.description);
+                setAmount(transaction.amount.toString());
+                setType(transaction.type);
+                setEditingId(transaction.id);
+            }
+
+            function handleDeleteTransaction(transactionId) {
+                const updatedTransactions = transactions.filter(transaction => transaction.id !== transactionId);
+                localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+                setTransactions(updatedTransactions);
+            }
+
+            return (
+                <div>
+                    <h1>Personal Finance Tracker</h1>
+                    <input
+                        type="text"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Description"
+                    />
+                    <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="Amount"
+                    />
+                    <select value={type} onChange={(e) => setType(e.target.value)}>
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                    </select>
+                    <button onClick={handleAddOrUpdateTransaction}>
+                        {editingId ? 'Update' : 'Add'} Transaction
+                    </button>
+                    {transactions.map(transaction => (
+                        <div key={transaction.id}>
+                            {transaction.description} - ${transaction.amount} ({transaction.type})
+                            <button onClick={() => handleEditTransaction(transaction)}>Edit</button>
+                            <button onClick={() => handleDeleteTransaction(transaction.id)}>Delete</button>
+                        </div>
+                    ))}
+                    <BarGraph transactions={transactions} />
+                </div>
+            );
+        }
+
+        function BarGraph({ transactions }) {
+            const canvasRef = React.useRef(null);
+
+            React.useEffect(() => {
+                const ctx = canvasRef.current.getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: transactions.map(transaction => transaction.description),
+                        datasets: [{
+                            label: 'Amount',
+                            data: transactions.map(transaction => transaction.amount),
+                            backgroundColor: transactions.map(transaction => transaction.type === 'expense' ? 'rgba(255, 99, 132, 0.2)' : 'rgba(75, 192, 192, 0.2)'),
+                            borderColor: transactions.map(transaction => transaction.type === 'expense' ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 192, 1)'),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+                return () => chart && chart.destroy();
+            }, [transactions]);
+
+            return <canvas ref={canvasRef}></canvas>;
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

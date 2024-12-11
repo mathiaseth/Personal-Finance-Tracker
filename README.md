@@ -1,4 +1,5 @@
 # Personal Finance Tracker
+Simple Personal Finance Tracker utilizing React and Python
 
 ## Description
 The Personal Finance Tracker is a web application designed to help users manage their finances by tracking income and expenses. Built with React and Chart.js on the frontend and a Python-based HTTP server on the backend, this app allows users to add, edit, and delete financial transactions and visualize them through dynamic bar graphs.
